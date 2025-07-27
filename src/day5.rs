@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    fs,
+    fs, vec,
 };
 
 use regex::Regex;
@@ -9,41 +9,38 @@ fn get_middle_number(update: &Vec<i32>) -> i32 {
     return update[update.len().midpoint(0)];
 }
 
-fn insert_before_first_occurance(n: i32, update: &mut Vec<i32>, prereqs: &HashSet<i32>) {
-    let first_occurances: Vec<usize> = prereqs
-        .iter()
-        .map(|a| update.iter().position(|b| *b == *a))
-        .filter(|x| x.is_some())
-        .map(|x| x.unwrap())
-        .collect();
-    let smallest_index = first_occurances.iter().min();
+fn get_valid_update(
+    original_update: &Vec<i32>,
+    must_come_before: &HashMap<i32, HashSet<i32>>,
+) -> Vec<i32> {
+    let mut pool: Vec<i32> = original_update.clone();
+    let all_values: HashSet<i32> = HashSet::from_iter(original_update.iter().cloned());
+    let mut new_update = vec![];
 
-    match smallest_index {
-        Some(index) => update.insert(*index, n),
-        None => (),
-    }
-}
+    while pool.len() > 0 {
+        for i in 0..pool.len() {
+            let n = pool[i];
+            let mut candidate = new_update.clone();
+            candidate.push(n);
+            let can_insert = in_correct_order(&candidate, must_come_before, &all_values);
 
-fn correct_update(update: Vec<i32>, must_come_before: &HashMap<i32, HashSet<i32>>) -> Vec<i32> {
-    let mut new_update = update.clone();
-
-    for n in update {
-        let prereqs = must_come_before.get(&n);
-        match prereqs {
-            Some(set) => {
-                new_update.remove(new_update.iter().position(|x| *x == n).unwrap());
-                insert_before_first_occurance(n, &mut new_update, &set);
+            if can_insert {
+                new_update.push(n);
+                pool.remove(i);
+                break;
             }
-            None => println!("No rules for {n}"),
         }
     }
 
     return new_update;
 }
 
-fn in_correct_order(update: &Vec<i32>, must_come_before: &HashMap<i32, HashSet<i32>>) -> bool {
+fn in_correct_order(
+    update: &Vec<i32>,
+    must_come_before: &HashMap<i32, HashSet<i32>>,
+    all_values: &HashSet<i32>,
+) -> bool {
     let mut already_printed = HashSet::new();
-    let all_values: HashSet<i32> = HashSet::from_iter(update.iter().cloned());
     for n in update {
         already_printed.insert(n);
         let prereqs = must_come_before.get(&n);
@@ -55,7 +52,7 @@ fn in_correct_order(update: &Vec<i32>, must_come_before: &HashMap<i32, HashSet<i
                     }
                 }
             }
-            None => println!("No rules for {n}"),
+            None => (), // println!("No rules for {n}"),
         }
     }
     return true;
@@ -98,14 +95,18 @@ pub fn run(path: String) {
     }
 
     let mut total = 0;
+    let mut total_2 = 0;
     for update in updates {
-        if in_correct_order(&update, &must_come_before) {
+        let all_values: HashSet<i32> = HashSet::from_iter(update.iter().cloned());
+        if in_correct_order(&update, &must_come_before, &all_values) {
             total += get_middle_number(&update);
         } else {
-            let corrected = correct_update(update, &must_come_before);
-            println!("corrected to {:?}", corrected);
+            let corrected = get_valid_update(&update, &must_come_before);
+            total_2 += get_middle_number(&corrected);
+            //println!("{:?} corrected to {:?}", update, corrected);
         }
     }
 
     println!("Day 5 Part 1: {total}");
+    println!("Day 5 Part 2: {total_2}");
 }
