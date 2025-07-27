@@ -7,6 +7,7 @@ enum Tile {
     Wall,
 }
 
+/*
 fn get_guard_symbol(guard_dx: i32, guard_dy: i32) -> String {
     match (guard_dx, guard_dy) {
         (0, -1) => return "^".to_string(),
@@ -36,6 +37,7 @@ fn print_grid(grid: &Vec<Vec<Tile>>, guard_x: i32, guard_y: i32, guard_dx: i32, 
 
     print!("\n");
 }
+*/
 
 fn is_in_bounds(grid: &Vec<Vec<Tile>>, x: i32, y: i32) -> bool {
     return x >= 0
