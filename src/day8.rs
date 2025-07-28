@@ -17,12 +17,12 @@ fn is_on_grid(pos: (i32, i32), bounds: (usize, usize)) -> bool {
     return x >= 0 && y >= 0 && x < w as i32 && y < h as i32;
 }
 
-fn distance(a: (i32, i32), b: (i32, i32)) -> f32 {
+/*fn distance(a: (i32, i32), b: (i32, i32)) -> f32 {
     return f32::sqrt((a.0 as f32 - b.0 as f32).powi(2) + (a.1 as f32 - b.1 as f32).powi(2));
-}
+}*/
 
 fn get_line_between_antennas(a: &Antenna, b: &Antenna, bounds: (usize, usize)) -> Vec<(i32, i32)> {
-    let (w, h) = bounds;
+    let (w, _) = bounds;
     let slope = (b.y - a.y) as f32 / (b.x - a.x) as f32;
     let intercept = a.y as f32 - slope * a.x as f32;
 
@@ -30,7 +30,7 @@ fn get_line_between_antennas(a: &Antenna, b: &Antenna, bounds: (usize, usize)) -
     //println!("Slope {slope}");
 
     for x in 0..(w as i32) {
-        let y_maybe = ((slope) * (x as f32) + (intercept));
+        let y_maybe = (slope) * (x as f32) + (intercept);
 
         let mut y = -999;
 
@@ -55,8 +55,8 @@ fn get_antinodes(a: &Antenna, b: &Antenna, bounds: (usize, usize)) -> Vec<(i32, 
     let mut antinodes = vec![];
 
     for candidate_point in get_line_between_antennas(a, b, bounds) {
-        let dist_a = distance((a.x, a.y), candidate_point);
-        let dist_b = distance((b.x, b.y), candidate_point);
+        //let dist_a = distance((a.x, a.y), candidate_point);
+        //let dist_b = distance((b.x, b.y), candidate_point);
 
         //if (dist_a - 2.00 * dist_b).abs() < 0.00001 || (dist_b - 2.00 * dist_a).abs() < 0.00001 {
         if is_on_grid(candidate_point, bounds) {
@@ -83,9 +83,9 @@ fn print_map(
 
     let mut to_print = vec![];
 
-    for y in 0..h {
+    for _ in 0..h {
         let mut row = vec![];
-        for x in 0..w {
+        for _ in 0..w {
             row.push(".");
         }
         to_print.push(row);
