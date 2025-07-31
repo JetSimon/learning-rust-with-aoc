@@ -1,4 +1,3 @@
-use core::num;
 use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashMap},
@@ -6,6 +5,7 @@ use std::{
     i64::MAX,
     vec,
 };
+use tqdm::tqdm;
 
 type Position = (i64, i64);
 
@@ -63,8 +63,7 @@ fn get_neighbours(grid: &Vec<Vec<i64>>, position: Position) -> Vec<Position> {
         .collect();
 }
 
-fn get_longest_path(grid: &Vec<Vec<i64>>, start: Position, end: Position) -> Vec<(i64, i64)> {
-    let current_pos = start;
+fn get_longest_path(grid: &Vec<Vec<i64>>, start: Position, end: Position) -> Vec<Vec<(i64, i64)>> {
 
     let mut dist = HashMap::new();
     let mut prev = HashMap::new();
@@ -76,35 +75,42 @@ fn get_longest_path(grid: &Vec<Vec<i64>>, start: Position, end: Position) -> Vec
         cost: 0,
     });
 
+    // Examine the frontier with lower cost nodes first (min-heap)
     while let Some(State { cost, position }) = q.pop() {
         // Alternatively we could have continued to find all shortest paths
-        if position == end {
-            break;
-        }
+        if position == end { break; }
 
         // Important as we may have already found a better way
-        if cost > *dist.entry(position).or_insert(MAX) {
-            continue;
-        }
+        if cost > *dist.entry(position).or_insert(MAX) { continue; }
+
+       // println!("Neighbours of {:?} are {:?}", position, get_neighbours(grid, position));
 
         // For each node we can reach, see if we can find a way with
         // a lower cost going through this node
-        for neighbour_position in get_neighbours(&grid, position) {
-            let (x, y) = neighbour_position;
-            let neighbour_height = grid[y as usize][x as usize];
+        let neighbours = get_neighbours(grid, position);
 
-            let next = State {
-                cost: cost - neighbour_height,
-                position: neighbour_position,
-            };
+        if neighbours.len() == 1 {
+            for neighbour_position in neighbours {
+                let next = State { cost: cost + 1, position: neighbour_position };
 
-            // If so, add it to the frontier and continue
-            if next.cost < *dist.entry(neighbour_position).or_insert(MAX) {
-                q.push(next);
-                // Relaxation, we have now found a better way
-                dist.insert(next.position, next.cost);
-                prev.insert(next.position, position);
+                //println!("{:?} > {:?}",*dist.entry(position).or_insert(MAX), next.cost);
+
+                // If so, add it to the frontier and continue
+                if next.cost < *dist.entry(neighbour_position).or_insert(MAX) {
+                    q.push(next);
+                    // Relaxation, we have now found a better way
+                    dist.insert(next.position, next.cost);
+                    prev.insert(next.position, position);
+                }
             }
+        }
+        else {
+            let mut paths : Vec<Vec<(i64,i64)>> = vec![];
+            for neighbour_position in neighbours {
+                let mut other_paths = get_longest_path(&grid, neighbour_position, end);
+                paths.append(&mut other_paths);
+            }
+            return paths;
         }
     }
 
@@ -120,23 +126,30 @@ fn get_longest_path(grid: &Vec<Vec<i64>>, start: Position, end: Position) -> Vec
                 previous_state = *state;
                 next_state = prev.get(&previous_state)
             }
-            None => break,
+            None => {
+                path.push(previous_state);
+                break;
+            },
         }
     }
 
     if path.len() > 0 && *path.last().unwrap() != start {
-        print!()
+        //println!("Starting at {:?} did not end at start ({:?}): {:?}", end, start, path);
         return vec![];
     }
 
-    return path;
+    //println!("Returning {:?}", path);
+
+    return vec![path];
 }
 
+/* 
 fn print_grid(grid: Vec<Vec<i64>>) {
     for row in grid {
         println!("{:?}", row);
     }
 }
+*/
 
 pub fn run(path: String) {
     // --snip--
@@ -151,11 +164,12 @@ pub fn run(path: String) {
         panic!("Problem opening the file: {error:?}");
     };
 
-    let mut grid: Vec<Vec<i64>> = res
+    let grid: Vec<Vec<i64>> = res
         .lines()
         .map(|line| {
             line.split("")
                 .filter(|c| *c != "")
+                .map(|c| if c == "."  { return "-1"} else {c})
                 .map(|c| c.parse::<i64>().unwrap())
                 .collect()
         })
@@ -176,15 +190,13 @@ pub fn run(path: String) {
 
     let mut score = 0;
 
-    for start in starts {
+    for start in tqdm(starts) {
         let mut num_reached = 0;
         for end in ends.clone() {
-            if get_longest_path(&grid, start, end).len() > 0 {
-                num_reached = 1;
-            }
+            num_reached += get_longest_path(&grid, start, end).len();
         }
         score += num_reached;
     }
 
-    println!("Day 10 Part 1: {score}");
+    println!("Day 10 Part 2: {score}");
 }

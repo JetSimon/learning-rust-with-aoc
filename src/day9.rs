@@ -15,6 +15,7 @@ impl std::hash::Hash for Block {
     }
 }
 
+/* 
 fn print_memory(memory: &Vec<i64>) {
     for block in memory {
         print!(
@@ -29,6 +30,7 @@ fn print_memory(memory: &Vec<i64>) {
 
     print!("\n");
 }
+*/
 
 fn get_used_blocks_from_right(memory: &Vec<i64>) -> Vec<Block> {
     let mut blocks = vec![];
